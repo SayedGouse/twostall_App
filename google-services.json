@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "997925616095",
+    "project_id": "twostall-fb3d0",
+    "storage_bucket": "twostall-fb3d0.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:997925616095:android:922b4bab8d788e6f54ac6a",
+        "android_client_info": {
+          "package_name": "com.sayed_salman.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB5Ygo26oDSsTJ1zKGCeHKjgOIrcPVkw-8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
