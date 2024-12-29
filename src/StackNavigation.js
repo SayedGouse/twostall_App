@@ -8,7 +8,6 @@ import LoginScreen from "./LoginScreen";
 import RegisterScreen from "./RegisterScreen";
 import ChangeAppointment from "./ChangeAppointment";
 import Icon from 'react-native-vector-icons/MaterialIcons';
-import Firebase from "./Fb/Firebase";
 
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -45,7 +44,7 @@ const StackNavigation = () => {
     <Stack.Navigator initialRouteName="Login">
       <Stack.Screen name="Login" options={{ headerShown: false }} component={LoginScreen} />
       <Stack.Screen name="Register" options={{ headerShown: false }} component={RegisterScreen} />
-      <Stack.Screen name="Notification" options={{ headerShown: false }} component={Firebase} />
+      <Stack.Screen name="Notification" options={{ headerShown: false }} component={RegisterScreen} />
       <Stack.Screen
         name="Tab"
         options={{ headerShown: false }}

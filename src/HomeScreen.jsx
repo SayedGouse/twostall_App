@@ -9,16 +9,18 @@ import {
   TouchableOpacity,
   ScrollView,
   Alert,
+  ActivityIndicator,
 } from "react-native";
+import PushNotification from "react-native-push-notification";
 import { Picker } from "@react-native-picker/picker";
-import { AirbnbRating } from "react-native-ratings"; // Install this using `npm install react-native-ratings`
+import { AirbnbRating } from "react-native-ratings";
 import Booking_model from "./Booking_model";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import Error_model from "./Error_model";
-import Firebase from "./Fb/Firebase";
-import messaging from '@react-native-firebase/messaging';
-const HomeScreen = ({navigation}) => {
+import messaging from "@react-native-firebase/messaging";
+
+const HomeScreen = ({ navigation }) => {
   const [patientName, setPatientName] = useState("");
   const [contactNo, setContactNo] = useState("");
   const [appointmentDate, setAppointmentDate] = useState("");
@@ -29,8 +31,9 @@ const HomeScreen = ({navigation}) => {
   const [open, setOpen] = useState(false);
   const [errorShow, setErrorShow] = useState(false);
   const [email, setEmail] = useState();
-   const [errorMessage, setErrorMessage] = useState('');
-   const [token, setToken] = useState('');
+  const [errorMessage, setErrorMessage] = useState("");
+  const [token, setToken] = useState("");
+  const [loading, setLoading] = useState(false); // Loader state
 
   const getEmail = async () => {
     try {
@@ -46,17 +49,14 @@ const HomeScreen = ({navigation}) => {
     getEmail();
   }, []);
 
-  // const { email } = route.params;
-
   const handleCloseModal = () => {
     setModalVisible(false);
   };
 
   const handleSubmit = async () => {
-    
+    setLoading(true); // Start loader
     try {
       if (token) {
-
         if (
           patientName &&
           contactNo &&
@@ -76,7 +76,6 @@ const HomeScreen = ({navigation}) => {
               Reason_for_booking: reasonForBooking,
               Feedback_Rating: feedbackRating,
               fcmToken: token,
-
             }
           );
           if (response.status === 200) {
@@ -91,27 +90,24 @@ const HomeScreen = ({navigation}) => {
         } else {
           alert("Please fill all the fields");
         }
-
       } else {
-        Alert.alert("internal server error")}
-      
+        Alert.alert("Internal server error"); 
+      }
     } catch (error) {
       if (error.response && error.response.status === 404) {
         setErrorMessage("Appointment already booked for this time slot.");
         setErrorShow(true);
-      
       }
+    } finally {
+      setLoading(false); // Stop loader
     }
   };
 
   const handleConfirm = (event, selectedDate) => {
     setOpen(false); // Close the picker
-
-    // Format the date (e.g., MM/DD/YYYY)
     const formatted = selectedDate.toLocaleDateString("en-US");
     setAppointmentDate(formatted);
   };
-
 
   const requestUserPermission = async () => {
     const authStatus = await messaging().requestPermission();
@@ -120,32 +116,46 @@ const HomeScreen = ({navigation}) => {
       authStatus === messaging.AuthorizationStatus.PROVISIONAL;
 
     if (enabled) {
-      console.log('Authorization status:', authStatus);
+      console.log("Authorization status:", authStatus);
     }
   };
 
   const getTokenAndSendToBackend = async () => {
     const fcmToken = await messaging().getToken();
     if (fcmToken) {
-      console.log('FCM Token:', fcmToken);
+      console.log("FCM Token:", fcmToken);
       setToken(fcmToken);
     }
   };
 
+
   useEffect(() => {
+   
+  
     requestUserPermission();
     getTokenAndSendToBackend();
-
-    // Handle incoming foreground messages
+   
+  
     const unsubscribeOnMessage = messaging().onMessage(async (remoteMessage) => {
-      console.log('New Notification', remoteMessage.notification?.body);
+      Alert.alert(
+        remoteMessage.notification?.title,
+        remoteMessage.notification?.body
+      );
+      PushNotification.localNotification({
+        title: remoteMessage.notification?.title,
+        message: remoteMessage.notification?.body,
+        channelId: "twostall-fb3d0", // Use the same channel ID
+        priority: "high",
+        importance: "high",
+        playSound: true,
+        soundName: "default",
+        visibility: "public",
+        ticker: 2,
+      });
     });
-
+  
     return unsubscribeOnMessage;
   }, []);
-
-
-
   return (
     <ScrollView style={styles.scrollContainer}>
       <View style={styles.container}>
@@ -177,27 +187,22 @@ const HomeScreen = ({navigation}) => {
                 onChangeText={(text) => setContactNo(text)}
               />
 
-              {/* Date of Appointment */}
               <Text style={styles.label}>Date of Appointment</Text>
-
               <TouchableOpacity onPress={() => setOpen(true)}>
                 <TextInput
                   style={styles.input}
                   placeholder="Select appointment date"
                   value={appointmentDate}
-                  onChangeText={(text) => setAppointmentDate(text)}
-                  editable={false} // Prevent manual input
+                  editable={false}
                 />
               </TouchableOpacity>
-
-              {/* Show DateTimePicker only when `show` is true */}
               {open && (
                 <DateTimePicker
                   value={new Date()}
                   mode="date"
                   display="default"
                   minimumDate={new Date()}
-                  onChange={handleConfirm} // Callback when a date is selected
+                  onChange={handleConfirm}
                 />
               )}
 
@@ -212,12 +217,11 @@ const HomeScreen = ({navigation}) => {
                 <Picker.Item label="10:00 AM" value="10:00 AM" />
                 <Picker.Item label="11:00 AM" value="11:00 AM" />
                 <Picker.Item label="12:00 PM" value="12:00 PM" />
-                <Picker.Item label="1:00 PM" value="13:00 PM" />
+                <Picker.Item label="1:00 PM" value="1:00 PM" />
                 <Picker.Item label="2:00 PM" value="2:00 PM" />
                 <Picker.Item label="3:00 PM" value="3:00 PM" />
                 <Picker.Item label="4:00 PM" value="4:00 PM" />
                 <Picker.Item label="5:00 PM" value="5:00 PM" />
-                
               </Picker>
 
               <Text style={styles.label}>Reason for Booking</Text>
@@ -237,9 +241,13 @@ const HomeScreen = ({navigation}) => {
                 showRating={false}
               />
 
-              <TouchableOpacity style={styles.button} onPress={handleSubmit}>
-                <Text style={styles.buttonText}>Submit</Text>
-              </TouchableOpacity>
+              {loading ? (
+                <ActivityIndicator size="large" color="#007bff" />
+              ) : (
+                <TouchableOpacity style={styles.button} onPress={handleSubmit}>
+                  <Text style={styles.buttonText}>Submit</Text>
+                </TouchableOpacity>
+              )}
             </View>
           </>
         ) : (
@@ -255,6 +263,7 @@ const HomeScreen = ({navigation}) => {
 };
 
 export default HomeScreen;
+
 
 const styles = StyleSheet.create({
   scrollContainer: {
